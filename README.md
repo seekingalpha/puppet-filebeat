@@ -43,7 +43,8 @@ The `filebeat` module depends on [`puppetlabs/stdlib`](https://forge.puppetlabs.
 
 `filebeat` can be installed with `puppet module install pcfens-filebeat` (or with r10k, librarian-puppet, etc.)
 
-The only required parameter, other than which files to ship, is the `outputs` parameter.
+The only required parameter is a `instances` hash that maps instance name to at lease one output and prospector.
+
 
 ## Usage
 
@@ -51,35 +52,30 @@ All of the default values in filebeat follow the upstream defaults (at the time 
 
 To ship files to [elasticsearch](https://www.elastic.co/guide/en/beats/filebeat/current/filebeat-configuration-details.html#elasticsearch-output):
 ```puppet
-class { 'filebeat':
-  outputs => {
-    'elasticsearch' => {
-     'hosts' => [
-       'http://localhost:9200',
-       'http://anotherserver:9200'
-     ],
-     'index'       => 'packetbeat',
-     'cas'         => [
-        '/etc/pki/root/ca.pem',
-     ],
-    },
-  },
+class { 'filebeat': 
+    instances           => {
+        'my_filebeat_name'     => {
+            'outputs'              => {
+                'elasticsearch' =>
+                    'hosts'     => [ 'localhost:9200' ],
+                    'index'     => 'INDEX_NAME',
+            }
+        }
+    }
 }
-
 ```
 
 To ship log files through [logstash](https://www.elastic.co/guide/en/beats/filebeat/current/filebeat-configuration-details.html#logstash-output):
 ```puppet
-class { 'filebeat':
-  outputs => {
-    'logstash'     => {
-     'hosts' => [
-       'localhost:5044',
-       'anotherserver:5044'
-     ],
-     'loadbalance' => true,
-    },
-  },
+class { 'filebeat': 
+    instances           => {
+        'my_filebeat_name'     => {
+            'outputs'              => {
+                'logstash' =>
+                    'hosts'     => [ 'localhost:9200' ],
+            }
+        }
+    }
 }
 
 ```
@@ -96,13 +92,23 @@ At a minimum, the `paths` parameter must be set to an array of files or blobs th
 be shipped. `doc_type` is what logstash views as the type parameter if you'd like to
 apply conditional filters.
 
+Prospectors can be configured as part of the instance config hash
+
 ```puppet
-filebeat::prospector { 'syslogs':
-  paths    => [
-    '/var/log/auth.log',
-    '/var/log/syslog',
-  ],
-  doc_type => 'syslog-beat',
+class { 'filebeat': 
+    instances           => {
+        'my_filebeat_name'     => {
+            'outputs'              => {
+                'logstash' =>
+                    'hosts'     => [ 'localhost:9200' ],
+            }
+            'prospectors'          => {
+                'syslog'    =>
+                    'fields_under_root' => true,
+                    'paths'             => ["/var/log/syslog"],
+            }
+        }
+    }
 }
 ```
 
@@ -153,35 +159,14 @@ Installs and configures filebeat.
 **Parameters within `filebeat`**
 - `package_ensure`: [String] The ensure parameter for the filebeat package (default: present)
 - `manage_repo`: [Boolean] Whether or not the upstream (elastic) repo should be configured or not (default: true)
-- `service_ensure`: [String] The ensure parameter on the filebeat service (default: running)
-- `service_enable`: [String] The enable parameter on the filebeat service (default: true)
 - `service_provider`: [String] The provider parameter on the filebeat service (default: on RedHat based systems use redhat, otherwise undefined)
-- `spool_size`: [Integer] How large the spool should grow before being flushed to the network (default: 2048)
-- `idle_timeout`: [String] How often the spooler should be flushed even if spool size isn't reached (default: 5s)
-- `publish_async`: [Boolean] If set to true filebeat will publish while preparing the next batch of lines to transmit (defualt: false)
-- `registry_file`: [String] The registry file used to store positions, absolute or relative to working directory (default .filebeat)
-- `config_file`: [String] Where the configuration file managed by this module should be placed. If you think
-  you might want to use this, read the [limitations](#using-config_file) first. Defaults to the location
-  that filebeat expects for your operating system.
-- `config_dir`: [String] The directory where prospectors should be defined (default: /etc/filebeat/conf.d)
-- `config_dir_mode`: [String] The permissions mode set on the configuration directory (default: 0755)
-- `config_file_mode`: [String] The permissions mode set on configuration files (default: 0644)
-- `purge_conf_dir`: [Boolean] Should files in the prospector configuration directory not managed by puppet be automatically purged
-- `outputs`: [Hash] Will be converted to YAML for the required outputs section of the configuration (see documentation, and above)
-- `shipper`: [Hash] Will be converted to YAML to create the optional shipper section of the filebeat config (see documentation)
-- `logging`: [Hash] Will be converted to YAML to create the optional logging section of the filebeat config (see documentation)
 - `conf_template`: [String] The configuration template to use to generate the main filebeat.yml config file
 - `download_url`: [String] The URL of the zip file that should be downloaded to install filebeat (windows only)
 - `install_dir`: [String] Where filebeat should be installed (windows only)
 - `tmp_dir`: [String] Where filebeat should be temporarily downloaded to so it can be installed (windows only)
-- `prospectors`: [Hash] Prospectors that will be created. Commonly used to create prospectors using hiera
-- `prospectors_merge`: [Boolean] If true, `hiera_hash()` will be used to build the the `prospectors` parameter (default: false)
+- `instances`: [Hash] Instances configuration hash mapping instance name to a hash of at lease `outputs` configuration
 
 ### Private Classes
-
-#### Class: `filebeat::config`
-
-Creates the configuration files required for filebeat (but not the prospectors)
 
 #### Class: `filebeat::install`
 
@@ -195,10 +180,6 @@ Sets default parameters for `filebeat` based on the OS and other facts.
 
 Installs the yum or apt repository for the system package manager to install filebeat.
 
-#### Class: `filebeat::service`
-
-Configures and manages the filebeat service.
-
 #### Class: `filebeat::install::linux`
 
 Install the filebeat package on Linux kernels.
@@ -206,6 +187,26 @@ Install the filebeat package on Linux kernels.
 #### Class: `filebeat::install::windows`
 
 Downloads, extracts, and installs the filebeat zip file in Windows.
+
+#### Class: `filebeat::instance`
+
+Creates Filebeat instances based on configuration hash from `filebeat` class
+
+**Parameters within `filebeat`**
+- `instance_name`: the name of the instance, must be unique.
+- `spool_size`: [Integer] How large the spool should grow before being flushed to the network (default: 2048)
+- `idle_timeout`: [String] How often the spooler should be flushed even if spool size isn't reached (default: 5s)
+- `publish_async`: [Boolean] If set to true filebeat will publish while preparing the next batch of lines to transmit (defualt: false)
+- `registry_file`: [String] The registry file used to store positions, absolute or relative to working directory (default .filebeat\_${instance\_name})
+- `config_dir_mode`: [String] The permissions mode set on the configuration directory (default: 0755)
+- `config_file_mode`: [String] The permissions mode set on configuration files (default: 0644)
+- `purge_conf_dir`: [Boolean] Should files in the prospector configuration directory not managed by puppet be automatically purged
+- `outputs`: [Hash] Will be converted to YAML for the required outputs section of the configuration (see documentation, and above)
+- `shipper`: [Hash] Will be converted to YAML to create the optional shipper section of the filebeat config (see documentation)
+- `logging`: [Hash] Will be converted to YAML to create the optional logging section of the filebeat config (see documentation)
+- `run_options`: options passed to the filebeat process.
+- `prospectors`: [Hash] Prospectors that will be created. Commonly used to create prospectors using hiera
+- `prospectors_merge`: [Boolean] If true, `hiera_hash()` will be used to build the the `prospectors` parameter (default: false)
 
 ### Public Defines
 
@@ -218,6 +219,11 @@ to fully understand what these parameters do.
 
 **Parameters for `filebeat::prospector`**
   - `ensure`: The ensure parameter on the prospector configuration file. (default: present)
+  - `service_name`: The Filebeat instance service name, generated by the `filebeat::instance` resource
+  - `config_dir`: Instance configuration directory, generated by the `filebeat::instance` resource
+  - `config_owner`: Linux only, the owner for configuration files, generated by the `filebeat::instance` resource
+  - `config_group`: Linux only, the group for configuration files, generated by the `filebeat::instance` resource
+  - `config_file_mode`: Linux only, the permission bits for configuration files, generated by the `filebeat::instance` resource
   - `paths`: [Array] The paths, or blobs that should be handled by the prospector. (required)
   - `exclude_files`: [Array] Files that match any regex in the list are excluded from filebeat (default: [])
   - `encoding`: [String] The file encoding. (default: plain)

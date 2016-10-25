@@ -1,5 +1,10 @@
 define filebeat::prospector (
   $ensure                = present,
+  $service_name          = 'filebeat',
+  $config_dir            = '/etc/filebeat/conf.d',
+  $config_owner          = 'root',
+  $config_group          = 'root',
+  $config_file_mode      = '0644',
   $paths                 = [],
   $exclude_files         = [],
   $encoding              = 'plain',
@@ -24,29 +29,15 @@ define filebeat::prospector (
 
   validate_hash($fields, $multiline)
   validate_array($paths, $exclude_files, $include_lines, $exclude_lines)
+  validate_string($service_name, $config_dir, $config_owner, $config_group, $config_file_mode)
 
-  case $::kernel {
-    'Linux' : {
-      file { "filebeat-${name}":
-        ensure  => $ensure,
-        path    => "${filebeat::config_dir}/${name}.yml",
-        owner   => 'root',
-        group   => 'root',
-        mode    => $::filebeat::config_file_mode,
-        content => template("${module_name}/prospector.yml.erb"),
-        notify  => Service['filebeat'],
-      }
-    }
-    'Windows' : {
-      file { "filebeat-${name}":
-        ensure  => $ensure,
-        path    => "${filebeat::config_dir}/${name}.yml",
-        content => template("${module_name}/prospector.yml.erb"),
-        notify  => Service['filebeat'],
-      }
-    }
-    default : {
-      fail($filebeat::kernel_fail_message)
-    }
+  file { "filebeat-${name}":
+    ensure  => $ensure,
+    path    => "${config_dir}/${name}.yml",
+    owner   => $config_owner,
+    group   => $config_group,
+    mode    => $config_file_mode,
+    content => template("${module_name}/prospector.yml.erb"),
+    notify  => Service[$service_name],
   }
 }
