@@ -1,6 +1,7 @@
 class filebeat::params {
   $package_ensure = present
   $manage_repo    = true
+  $repo_version     = '1.3'
 
   if versioncmp('1.9.1', $::rubyversion) > 0 {
     $conf_template = "${module_name}/filebeat.yml.ruby18.erb"

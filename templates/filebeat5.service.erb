@@ -1,0 +1,13 @@
+# /lib/systemd/system/filebeat.service
+[Unit]
+Description=Filebeat <%= @instance_name %>
+Documentation=https://www.elastic.co/guide/en/beats/filebeat/current/index.html
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/usr/share/filebeat/bin/filebeat -c <%= @config_file %> -path.home /usr/share/filebeat_<%= @instance_name %> -path.config /etc/filebeat_<%= @instance_name %> -path.data /var/lib/filebeat_<%= @instance_name %> -path.logs /var/log/filebeat_<%= @instance_name %>
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

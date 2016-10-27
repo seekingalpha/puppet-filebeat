@@ -25,11 +25,18 @@ define filebeat::prospector (
   $exclude_lines         = [],
   $max_bytes             = '10485760',
   $multiline             = {},
+  #### v5 only ####
+  $json_message_key      = undef,
+  $json_keys_under_root  = false,
+  $json_overwrite_keys   = false,
+  $json_add_error_key    = false,
+  #### End v5 only ####
 ) {
 
   validate_hash($fields, $multiline)
   validate_array($paths, $exclude_files, $include_lines, $exclude_lines)
   validate_string($service_name, $config_dir, $config_owner, $config_group, $config_file_mode)
+  validate_bool($json_keys_under_root, $json_overwrite_keys, $json_add_error_key)
 
   file { "filebeat-${name}":
     ensure  => $ensure,

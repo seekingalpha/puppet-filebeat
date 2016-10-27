@@ -2,7 +2,7 @@ filebeat:
   prospectors:
     - paths:
       <%- @paths.each do |log_path| -%>
-      - <%= log_path %>
+        - <%= log_path %>
       <%- end -%>
       <%- if @exclude_files.length > 0 -%>
       exclude_files:
@@ -51,6 +51,18 @@ filebeat:
       <%- end -%>
       <%- if @max_bytes -%>
       max_bytes: <%= @max_bytes %>
+      <%- end -%>
+      <%- if @json_message_key -%>
+      json.message_key: <%= @json_message_key %>
+      <%- end -%>
+      <%- if @json_keys_under_root -%>
+      json.keys_under_root: <%= @json_keys_under_root %>
+      <%- end -%>
+      <%- if @json_overwrite_keys -%>
+      json.overwrite_keys: <%= @json_overwrite_keys %>
+      <%- end -%>
+      <%- if @json_add_error_key -%>
+      json.add_error_key: <%= @json_add_error_key %>
       <%- end -%>
       <%- if @multiline.length > 0 -%>
       multiline:

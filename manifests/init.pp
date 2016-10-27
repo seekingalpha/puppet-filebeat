@@ -33,6 +33,7 @@
 class filebeat (
   $package_ensure   = $filebeat::params::package_ensure,
   $manage_repo      = $filebeat::params::manage_repo,
+  $repo_version     = $filebeat::params::repo_version,
   $service_provider = $filebeat::params::service_provider,
   $conf_template    = $filebeat::params::conf_template,
   $download_url     = $filebeat::params::download_url,
@@ -45,7 +46,7 @@ class filebeat (
 
   validate_bool($manage_repo)
 
-  validate_string($package_ensure)
+  validate_string($package_ensure, $repo_version)
 
   if $package_ensure == '1.0.0-beta4' or $package_ensure == '1.0.0-rc1' {
     fail('Filebeat versions 1.0.0-rc1 and before are unsupported because they don\'t parse normal YAML headers')

@@ -26,7 +26,7 @@ define filebeat::instance (
   $beat_name         = $::fqdn,
   $tags              = [],
   $queue_size        = 1000,
-  $max_procs         = undef,
+  $max_procs         = $::facts['processors']['count'],
   $fields            = {},
   $fields_under_root = false,
   #### End v5 onlly ####
@@ -66,8 +66,22 @@ define filebeat::instance (
         }
       }
 
+      if versioncmp($filebeat::repo_version, '1.3') > 0 {
+        $service_template = 'filebeat/filebeat5.service.erb'
+        file { ['/usr/share', '/var/lib'].map |$d| { "${d}/filebeat_${instance_name}" } :
+          ensure  => directory,
+          owner   => $config_owner,
+          group   => $config_group,
+          mode    => $config_dir_mode,
+          recurse => $purge_conf_dir,
+          purge   => $purge_conf_dir,
+        }
+      } else {
+        $service_template = 'filebeat/filebeat.service.erb'
+      }
+
       file { "/etc/systemd/system/filebeat-${instance_name}.service":
-        content => template('filebeat/filebeat.service.erb'),
+        content => template($service_template),
         owner   => $config_owner,
         group   => $config_group,
         notify  => Service[$service_name],
@@ -97,13 +111,13 @@ define filebeat::instance (
   }
 
   $filebeat_config = {
-    'shutdown_timeout'  => $filebeat::shutdown_timeout,
-    'beat_name'         => $filebeat::beat_name,
-    'tags'              => $filebeat::tags,
-    'queue_size'        => $filebeat::queue_size,
-    'max_procs'         => $filebeat::max_procs,
-    'fields'            => $filebeat::fields,
-    'fields_under_root' => $filebeat::fields_under_root,
+    'shutdown_timeout'  => $shutdown_timeout,
+    'beat_name'         => $beat_name,
+    'tags'              => $tags,
+    'queue_size'        => $queue_size,
+    'max_procs'         => $max_procs,
+    'fields'            => $fields,
+    'fields_under_root' => $fields_under_root,
     'filebeat'   => {
       'spool_size'    => $spool_size,
       'idle_timeout'  => $idle_timeout,
@@ -126,7 +140,6 @@ define filebeat::instance (
     mode    => $config_dir_mode,
     recurse => $purge_conf_dir,
     purge   => $purge_conf_dir,
-
   }
 
   file {"filebeat_${instance_name}.yml":

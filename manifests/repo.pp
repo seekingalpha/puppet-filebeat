@@ -4,9 +4,15 @@ class filebeat::repo {
       include ::apt
       Class['apt::update'] -> Package['filebeat']
 
+      if versioncmp($filebeat::repo_version, '1.3') > 0 {
+        $final_location = "https://artifacts.elastic.co/packages/${filebeat::repo_version}/apt"
+      } else {
+        $final_location = "https://packages.elastic.co/beats/apt"
+      }
+
       if !defined(Apt::Source['beats']){
         apt::source { 'beats':
-          location => 'http://packages.elastic.co/beats/apt',
+          location => $final_location,
           release  => 'stable',
           repos    => 'main',
           key      => {
