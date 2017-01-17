@@ -181,7 +181,7 @@ define filebeat::instance (
       'config_file_mode' => $config_file_mode,
       'require'          => "File[filebeat-config-dir-${instance_name}]",
     }
-    create_resources('filebeat::prospector', $prospectors_final, $prospector_defaults)
+    create_resources('filebeat::prospector', prefix($prospectors_final, "${instance_name}_"), $prospector_defaults)
   }
 
 }
