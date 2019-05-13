@@ -4,8 +4,10 @@ class filebeat::params {
   $repo_version     = '1.3'
 
   if versioncmp('1.9.1', $::rubyversion) > 0 {
+    $ruby_yaml_support = false
     $conf_template = "${module_name}/filebeat.yml.ruby18.erb"
   } else {
+    $ruby_yaml_support = true
     $conf_template = "${module_name}/filebeat.yml.erb"
   }
 

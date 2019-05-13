@@ -12,6 +12,7 @@
 # @param logging [Hash] Will be converted to YAML to create the optional logging section of the filebeat config (see documentation)
 # @param prospectors [Hash] Prospectors that will be created. Commonly used to create prospectors using hiera
 # @param prospectors_merge [Boolean] Whether $prospectors should merge all hiera sources, or use simple automatic parameter lookup
+# @param config [Hash] If provided, overrides the entire configuration file
 define filebeat::instance (
   $instance_name     = $name,
   $spool_size        = 2048,
@@ -38,13 +39,14 @@ define filebeat::instance (
   $prospectors_merge = false,
   $service_ensure    = running,
   $service_enable    = true,
+  $config            = undef,
 ) {
 
   validate_hash($outputs, $logging)
   validate_string($instance_name, $idle_timeout, $registry_file)
   validate_bool($prospectors_merge)
 
-  if empty($outputs) {
+  if empty($outputs) and !($config and $filebeat::params::ruby_yaml_support) {
     fail("Outputs cannot be empty for instance [$instance_name]")
   }
 
@@ -110,26 +112,30 @@ define filebeat::instance (
     }
   }
 
-  $filebeat_config = {
-    'shutdown_timeout'  => $shutdown_timeout,
-    'beat_name'         => $beat_name,
-    'tags'              => $tags,
-    'queue_size'        => $queue_size,
-    'max_procs'         => $max_procs,
-    'fields'            => $fields,
-    'fields_under_root' => $fields_under_root,
-    'filebeat'   => {
-      'spool_size'    => $spool_size,
-      'idle_timeout'  => $idle_timeout,
-      'registry_file' => $registry_file,
-      'publish_async' => $publish_async,
-      'config_dir'    => $config_dir,
-      'shutdown_timeout' => $shutdown_timeout,
-    },
-    'output'     => $outputs,
-    'shipper'    => $shipper,
-    'logging'    => $logging,
-    'runoptions' => $run_options,
+  $filebeat_config = if $config and $filebeat::params::ruby_yaml_support {
+    $config
+  } else {
+    {
+      'shutdown_timeout'  => $shutdown_timeout,
+      'beat_name'         => $beat_name,
+      'tags'              => $tags,
+      'queue_size'        => $queue_size,
+      'max_procs'         => $max_procs,
+      'fields'            => $fields,
+      'fields_under_root' => $fields_under_root,
+      'filebeat'   => {
+        'spool_size'    => $spool_size,
+        'idle_timeout'  => $idle_timeout,
+        'registry_file' => $registry_file,
+        'publish_async' => $publish_async,
+        'config_dir'    => $config_dir,
+        'shutdown_timeout' => $shutdown_timeout,
+      },
+      'output'     => $outputs,
+      'shipper'    => $shipper,
+      'logging'    => $logging,
+      'runoptions' => $run_options,
+    }
   }
 
   file { "filebeat-instance-dir-${instance_name}":

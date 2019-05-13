@@ -1,3 +1,4 @@
+<%- if !@config -%>
 <%- @filebeat_config['filebeat']['spool_size'] = Integer(@filebeat_config['filebeat']['spool_size']) -%>
 <%- if @filebeat_config['output']['file'] -%>
 <%- if @filebeat_config['output']['file']['rotate_every_kb'] -%>
@@ -57,6 +58,7 @@
 <%- end -%>
 <%- if @filebeat_config['logging']['files']['keepfiles'] -%>
 <%- @filebeat_config['logging']['files']['keepfiles'] = Integer(@filebeat_config['logging']['files']['keepfiles']) -%>
+<%- end -%>
 <%- end -%>
 <%- end -%>
 ### Filebeat configuration managed by Puppet ###
