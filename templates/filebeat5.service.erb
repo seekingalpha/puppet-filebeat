@@ -6,7 +6,7 @@ Wants=network-online.target
 After=network-online.target
 
 [Service]
-ExecStart=/usr/share/filebeat/bin/filebeat -c <%= @config_file %> -path.home /usr/share/filebeat_<%= @instance_name %> -path.config /etc/filebeat_<%= @instance_name %> -path.data /var/lib/filebeat_<%= @instance_name %> -path.logs /var/log/filebeat_<%= @instance_name %>
+ExecStart=/usr/share/filebeat/bin/filebeat -c <%= @config_file %> -path.home /usr/share/filebeat -path.config /etc/filebeat_<%= @instance_name %> -path.data /var/lib/filebeat_<%= @instance_name %> -path.logs /var/log/filebeat_<%= @instance_name %>
 Restart=always
 
 [Install]
