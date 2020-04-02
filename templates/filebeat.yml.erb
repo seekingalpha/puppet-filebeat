@@ -1,5 +1,7 @@
 <%- if !@config -%>
+<%- if @filebeat_config['filebeat']['spool_size'] -%>
 <%- @filebeat_config['filebeat']['spool_size'] = Integer(@filebeat_config['filebeat']['spool_size']) -%>
+<%- end -%>
 <%- if @filebeat_config['output']['file'] -%>
 <%- if @filebeat_config['output']['file']['rotate_every_kb'] -%>
 <%- @filebeat_config['output']['file']['rotate_every_kb'] = Integer(@filebeat_config['output']['file']['rotate_every_kb']) -%>

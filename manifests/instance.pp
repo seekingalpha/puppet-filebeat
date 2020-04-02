@@ -112,6 +112,12 @@ define filebeat::instance (
     }
   }
 
+  if versioncmp($filebeat::repo_version, '6.0') >= 0 {
+    $dead_keys = ['queue_size', 'spool_size', 'idle_timeout', 'publish_async']
+  } else {
+    $dead_keys = []
+  }
+
   $filebeat_config = if $config and $filebeat::params::ruby_yaml_support {
     $config
   } else {
@@ -123,19 +129,19 @@ define filebeat::instance (
       'max_procs'         => $max_procs,
       'fields'            => $fields,
       'fields_under_root' => $fields_under_root,
-      'filebeat'   => {
+      'filebeat'   => delete({
         'spool_size'    => $spool_size,
         'idle_timeout'  => $idle_timeout,
         'registry_file' => $registry_file,
         'publish_async' => $publish_async,
         'config_dir'    => $config_dir,
         'shutdown_timeout' => $shutdown_timeout,
-      },
+      }, $dead_keys),
       'output'     => $outputs,
       'shipper'    => $shipper,
       'logging'    => $logging,
       'runoptions' => $run_options,
-    }
+    } - $dead_keys
   }
 
   file { "filebeat-instance-dir-${instance_name}":
